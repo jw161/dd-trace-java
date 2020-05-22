@@ -3,6 +3,8 @@ import datadog.trace.agent.test.utils.PortUtils
 import datadog.trace.api.DDSpanTypes
 import datadog.trace.bootstrap.instrumentation.api.Tags
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse
+import org.elasticsearch.cluster.health.ClusterHealthStatus
 import org.elasticsearch.common.io.FileSystemUtils
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.index.IndexNotFoundException
@@ -51,7 +53,8 @@ class Elasticsearch6NodeClientTest extends AgentTestRunner {
     runUnderTrace("setup") {
       // this may potentially create multiple requests and therefore multiple spans, so we wrap this call
       // into a top level trace to get exactly one trace in the result.
-      testNode.client().admin().cluster().prepareHealth().setWaitForYellowStatus().execute().actionGet(TIMEOUT)
+      ClusterHealthResponse response = testNode.client().admin().cluster().prepareHealth().setWaitForYellowStatus().execute().actionGet(TIMEOUT)
+      assert response.getStatus() == ClusterHealthStatus.GREEN || response.getStatus() == ClusterHealthStatus.YELLOW
     }
     TEST_WRITER.waitForTraces(1)
   }

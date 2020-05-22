@@ -5,7 +5,9 @@ import datadog.trace.agent.test.AgentTestRunner
 import datadog.trace.agent.test.utils.PortUtils
 import datadog.trace.api.DDSpanTypes
 import datadog.trace.bootstrap.instrumentation.api.Tags
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse
 import org.elasticsearch.action.search.SearchResponse
+import org.elasticsearch.cluster.health.ClusterHealthStatus
 import org.elasticsearch.common.io.FileSystemUtils
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.index.IndexNotFoundException
@@ -105,7 +107,8 @@ class Elasticsearch2SpringTemplateTest extends AgentTestRunner {
     expect:
     template.createIndex(indexName)
     TEST_WRITER.waitForTraces(1)
-    template.getClient().admin().cluster().prepareHealth().setWaitForYellowStatus().execute().actionGet(TIMEOUT)
+    ClusterHealthResponse healthResponse = template.getClient().admin().cluster().prepareHealth().setWaitForYellowStatus().execute().actionGet(TIMEOUT)
+    assert healthResponse.getStatus() == ClusterHealthStatus.GREEN || healthResponse.getStatus() == ClusterHealthStatus.YELLOW
     TEST_WRITER.waitForTraces(2)
 
     when:
@@ -281,7 +284,8 @@ class Elasticsearch2SpringTemplateTest extends AgentTestRunner {
   def "test results extractor"() {
     setup:
     template.createIndex(indexName)
-    testNode.client().admin().cluster().prepareHealth().setWaitForYellowStatus().execute().actionGet(TIMEOUT)
+    ClusterHealthResponse healthResponse = template.client.admin().cluster().prepareHealth().setWaitForYellowStatus().execute().actionGet(TIMEOUT)
+    assert healthResponse.getStatus() == ClusterHealthStatus.GREEN || healthResponse.getStatus() == ClusterHealthStatus.YELLOW
     template.index(IndexQueryBuilder.newInstance()
       .withObject(new Doc(id: 1, data: "doc a"))
       .withIndexName(indexName)
