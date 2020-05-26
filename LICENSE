@@ -1,0 +1,11 @@
+This product has been forked from https://github.com/DataDog/dd-trace-java
+that has been licensed on Apache License 2.0
+
+All the files that were not modified in this fork are licensed on Apache License 2.0.
+See LICENSE-DATADOG for the license information.
+
+All the files that were modified in this fork are currently licensed as:
+Copyright 2020 Jacek Wojciechowski
+All rights reserved
+
+In compliance with the Apache License 2.0 terms, each file that was modified in this fork carry a notice stating that it was changed
