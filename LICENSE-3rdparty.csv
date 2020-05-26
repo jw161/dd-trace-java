@@ -1,4 +1,5 @@
 Component,Origin,License,Copyright
+forked from,https://github.com/DataDog/dd-trace-java,Apache-2.0,Copyright 2017 Datadog Inc.
 https://github.com/DataDog/dd-trace-java/blob/dev/dd-trace/src/main/java/com/datadoghq/trace/propagation/Codec.java,Uber,MIT,
 import,io.opentracing,Apache-2.0,Copyright 2016-2017 The OpenTracing Authors
 import,org.slf4j,MIT,Copyright (c) 2004-2017 QOS.ch

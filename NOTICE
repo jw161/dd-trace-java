@@ -1,4 +1,15 @@
+This product has been forked from https://github.com/DataDog/dd-trace-java
+
+The original notice:
+=================================================================================
 Datadog dd-trace-java
 Copyright 2017 Datadog, Inc.
 
 This product includes software developed at Datadog (https://www.datadoghq.com/).
+=================================================================================
+End of the original notice.
+
+The following notice applies ONLY to the modifications done within this fork:
+
+Copyright 2020 Jacek Wojciechowski
+All rights reserved
