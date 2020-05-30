@@ -11,7 +11,7 @@ class SpringBootSmokeTest extends AbstractServerSmokeTest {
     List<String> command = new ArrayList<>()
     command.add(javaPath())
     command.addAll(defaultJavaProperties)
-    command.addAll((String[]) ["-jar", springBootShadowJar, "--server.port=${httpPort}"])
+    command.addAll((String[]) ["-Ddd.snapwatch.enabled=true", "-jar", springBootShadowJar, "--server.port=${httpPort}"])
     ProcessBuilder processBuilder = new ProcessBuilder(command)
     processBuilder.directory(new File(buildDirectory))
   }

@@ -2,6 +2,8 @@ package datadog.trace.api.writer
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.io.Files
+import datadog.trace.MsgPackStatefulDeserializer
 import datadog.trace.common.sampling.RateByServiceSampler
 import datadog.trace.common.writer.ddagent.DDAgentApi
 import datadog.trace.common.writer.ddagent.DDAgentResponseListener
@@ -276,6 +278,32 @@ class DDAgentApiTest extends DDSpecification {
     19             | (1..16).collect { [] }
     65538          | (1..((1 << 16) - 1)).collect { [] }
     65541          | (1..(1 << 16)).collect { [] }
+  }
+
+  def "parse file"() {
+    setup:
+    def deserializer = new MsgPackStatefulDeserializer();
+    when:
+//    File file = new File("/home/jacek/.snapwatch/recordings/2020-05-30T15-47-46");
+    File dir = new File("/home/jacek/.snapwatch/recordings");
+    dir.listFiles().toList().each {
+      def file = it
+      def bytes = Files.toByteArray(file)
+      println "file: " + file.getCanonicalPath() + ", size: " + bytes.length;
+      if(bytes.length > 0) {
+        def deserialized = deserializer.deserialize(bytes);
+
+        deserialized.each {
+          println "trace"
+          it.each {
+            print "span "
+            println "name:" + it['name'] + " span_id:" + it['span_id'] + " parent_id:" + it['parent_id'] + " # all details:" + it
+          }
+        }
+      }
+    }
+    then:
+    println "all OK"
   }
 
   static List<List<TreeMap<String, Object>>> convertList(byte[] bytes) {
