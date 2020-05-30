@@ -1,20 +1,13 @@
 package datadog.trace.common.writer.ddagent;
 
-import static org.msgpack.core.MessagePack.Code.FIXARRAY_PREFIX;
-
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 import com.squareup.moshi.Types;
 import datadog.common.exec.CommonTaskExecutor;
+import datadog.trace.api.Config;
 import datadog.trace.common.writer.unixdomainsockets.UnixDomainSocketFactory;
 import datadog.trace.core.ContainerInfo;
 import datadog.trace.core.DDTraceCoreInfo;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
@@ -23,6 +16,21 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.msgpack.core.MessagePack.Code.FIXARRAY_PREFIX;
 
 /** The API pointing to a DD agent */
 @Slf4j
@@ -61,6 +69,9 @@ public class DDAgentApi {
   private OkHttpClient httpClient;
   private HttpUrl tracesUrl;
 
+  private File tracesDir;
+  private final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss");
+
   public DDAgentApi(final String host, final int port, final String unixDomainSocketPath) {
     this.host = host;
     this.port = port;
@@ -74,6 +85,45 @@ public class DDAgentApi {
   }
 
   Response sendSerializedTraces(final TraceBuffer traces) {
+
+    if (Config.get().isSnapwatchEnabled()) {
+      return sendSerializedTracesSW(traces);
+    } else {
+      return sendSerializedTracesDD(traces);
+    }
+  }
+
+  private Response sendSerializedTracesSW(final TraceBuffer traces) {
+    if (tracesDir == null) {
+      tracesDir = new File(System.getenv("HOME") + "/.snapwatch/recordings");
+      if (!tracesDir
+          .exists()) { // todo: more error checking: what if exists but it's not a directory, etc.
+        tracesDir.mkdirs();
+      }
+    }
+
+    final String fileName =
+        DATE_FORMAT.format(new Date()); // todo: it's insufficient to make a unique name
+    final File file = new File(tracesDir, fileName);
+
+    // todo: add data that DD adds in HTTP headers
+
+    try (final FileOutputStream outputStream = new FileOutputStream(file)) {
+      final FileChannel fileChannel = outputStream.getChannel();
+
+      traces.writeTo(fileChannel);
+      fileChannel.force(false); // todo: is it a good idea?
+
+    } catch (final FileNotFoundException e) {
+      e.printStackTrace(); // todo: better error handling
+    } catch (final IOException e) {
+      e.printStackTrace(); // todo: better error handling
+    }
+
+    return Response.success(200);
+  }
+
+  private Response sendSerializedTracesDD(final TraceBuffer traces) {
     if (httpClient == null) {
       detectEndpointAndBuildClient();
     }
@@ -297,7 +347,7 @@ public class DDAgentApi {
   private static class MsgPackRequestBody extends RequestBody {
     private final TraceBuffer traces;
 
-    private MsgPackRequestBody(TraceBuffer traces) {
+    private MsgPackRequestBody(final TraceBuffer traces) {
       this.traces = traces;
     }
 
